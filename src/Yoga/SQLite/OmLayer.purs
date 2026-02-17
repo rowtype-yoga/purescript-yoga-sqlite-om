@@ -24,26 +24,26 @@ type SQLiteL r = (sqlite :: DBConnection | r)
 
 -- | Create a SQLite layer that provides DBConnection as a service
 -- | Requires SQLiteConfig in context
-sqliteLayer :: forall r. OmLayer (sqliteConfig :: SQLiteConfig | r) (SQLiteL ()) ()
+sqliteLayer :: forall r. OmLayer (sqliteConfig :: SQLiteConfig | r) () { sqlite :: DBConnection }
 sqliteLayer = makeLayer do
   { sqliteConfig } <- Om.ask
-  logInfo "📦 Creating SQLite connection" {}
+  logInfo "Creating SQLite connection"
   db <- liftEffect $ SQLite.open sqliteConfig.path
-  logInfo "✅ SQLite connected" {}
+  logInfo "SQLite connected"
   pure { sqlite: db }
   where
-  logInfo msg _ = liftEffect $ Console.log msg
+  logInfo msg = liftEffect $ Console.log msg
 
 -- | Create a SQLite layer with inline config
 -- | Useful when you don't need config from context
 sqliteLayer' ::
   forall r.
   SQLiteConfig ->
-  OmLayer r (SQLiteL ()) ()
+  OmLayer r () { sqlite :: DBConnection }
 sqliteLayer' config = makeLayer do
-  logInfo "📦 Creating SQLite connection" {}
+  logInfo "Creating SQLite connection"
   db <- liftEffect $ SQLite.open config.path
-  logInfo "✅ SQLite connected" {}
+  logInfo "SQLite connected"
   pure { sqlite: db }
   where
-  logInfo msg _ = liftEffect $ Console.log msg
+  logInfo msg = liftEffect $ Console.log msg
