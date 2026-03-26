@@ -15,13 +15,13 @@
               "prelude": ">=6.0.2 <7.0.0"
             },
             {
+              "yoga-bun-sqlite": ">=0.1.0 <0.2.0"
+            },
+            {
               "yoga-om": ">=1.4.0 <2.0.0"
             },
             {
               "yoga-om-layer": ">=1.1.1 <2.0.0"
-            },
-            {
-              "yoga-sqlite": ">=0.1.0 <0.2.0"
             }
           ]
         },
@@ -35,8 +35,8 @@
   "packages": {
     "aff": {
       "type": "registry",
-      "version": "7.1.0",
-      "integrity": "sha256-/nOpDQVnKIoP1pQ1ZZBYpadK0TuMlG4WwufGzJpsfD0=",
+      "version": "8.0.0",
+      "integrity": "sha256-9BRIrSdRoYybfiUmBqgKJ66cPqxYHb277bVWQMn/9sg=",
       "dependencies": [
         "control",
         "datetime",
@@ -454,37 +454,6 @@
         "prelude"
       ]
     },
-    "js-promise": {
-      "type": "registry",
-      "version": "1.0.0",
-      "integrity": "sha256-u+6+ofIwT5XhT2fbMu4dShwkyWGfPRt9642Cnzw/Wvk=",
-      "dependencies": [
-        "effect",
-        "exceptions",
-        "foldable-traversable",
-        "functions",
-        "maybe",
-        "newtype",
-        "prelude"
-      ]
-    },
-    "js-promise-aff": {
-      "type": "registry",
-      "version": "1.0.0",
-      "integrity": "sha256-gEKAdNnTWjXS+tTp/AhYl/ezloKfuoQFcBKrdOx2USo=",
-      "dependencies": [
-        "aff",
-        "control",
-        "effect",
-        "either",
-        "exceptions",
-        "foreign",
-        "js-promise",
-        "maybe",
-        "prelude",
-        "transformers"
-      ]
-    },
     "lazy": {
       "type": "registry",
       "version": "6.0.0",
@@ -841,10 +810,30 @@
         "unsafe-coerce"
       ]
     },
+    "yoga-bun-sqlite": {
+      "type": "registry",
+      "version": "0.1.0",
+      "integrity": "sha256-2wOsMET6hCVWPHYbly48/nRixU1Ohd+YoBNf5L+/KpU=",
+      "dependencies": [
+        "effect",
+        "either",
+        "foldable-traversable",
+        "foreign",
+        "heterogeneous",
+        "maybe",
+        "newtype",
+        "nullable",
+        "ordered-collections",
+        "prelude",
+        "unsafe-coerce",
+        "yoga-json",
+        "yoga-sql-types"
+      ]
+    },
     "yoga-json": {
       "type": "registry",
-      "version": "5.2.0",
-      "integrity": "sha256-M+kkz6E1Gf+C4bKnhqoBFIoVcc74loi3rLULePbB204=",
+      "version": "5.2.1",
+      "integrity": "sha256-12I7qIf27oKV/D/YRcHtGpN8n7GQ0Bm3uzvI4ZjOQrs=",
       "dependencies": [
         "arrays",
         "bifunctors",
@@ -882,8 +871,8 @@
     },
     "yoga-om": {
       "type": "registry",
-      "version": "1.4.0",
-      "integrity": "sha256-gTpW2XABBZbD3FtDR4gX1ktB1EtQUibIvGUuOhUuXRU=",
+      "version": "1.5.2",
+      "integrity": "sha256-2ys14BF6NPgzFDFUIFk0EDxmqkA8+yghIA9TXHlOmE0=",
       "dependencies": [
         "aff",
         "aff-retry",
@@ -895,6 +884,7 @@
         "either",
         "exceptions",
         "functions",
+        "heterogeneous",
         "maybe",
         "newtype",
         "parallel",
@@ -913,8 +903,8 @@
     },
     "yoga-om-layer": {
       "type": "registry",
-      "version": "1.1.1",
-      "integrity": "sha256-9Hl4M0p/+6X98slJAv/Zg5oitWQBYb9ndD7rQlkfXTo=",
+      "version": "1.2.2",
+      "integrity": "sha256-Usw2ZysteSYNkEG3CDmVVXUk7cgr1mntkmhbR33nF6M=",
       "dependencies": [
         "aff",
         "aff-retry",
@@ -932,6 +922,7 @@
         "refs",
         "transformers",
         "type-equality",
+        "typelevel-prelude",
         "unsafe-coerce",
         "variant",
         "yoga-om"
@@ -964,26 +955,6 @@
         "typelevel-prelude",
         "unsafe-coerce",
         "yoga-json"
-      ]
-    },
-    "yoga-sqlite": {
-      "type": "registry",
-      "version": "0.1.0",
-      "integrity": "sha256-ayOYqZUmZM2ZszA8uQ38TN30WNRWSu7LWS4HX8cPbkc=",
-      "dependencies": [
-        "aff",
-        "arrays",
-        "effect",
-        "either",
-        "foldable-traversable",
-        "js-promise",
-        "js-promise-aff",
-        "maybe",
-        "newtype",
-        "nullable",
-        "prelude",
-        "unsafe-coerce",
-        "yoga-sql-types"
       ]
     },
     "yoga-tree": {
