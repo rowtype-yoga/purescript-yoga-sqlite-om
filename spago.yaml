@@ -3,7 +3,7 @@ workspace: {}
 package:
   name: yoga-sqlite-om
   publish:
-    version: 0.2.0
+    version: 0.3.0
     license: MIT
     location:
       githubOwner: rowtype-yoga
@@ -13,5 +13,5 @@ package:
     - effect: ">=4.0.0 <5.0.0"
     - prelude: ">=6.0.2 <7.0.0"
     - yoga-bun-sqlite: ">=0.1.0 <0.2.0"
-    - yoga-om: ">=1.5.2 <2.0.0"
-    - yoga-om-layer: ">=1.2.2 <2.0.0"
+    - yoga-om: ">=2.0.0 <3.0.0"
+    - yoga-om-layer: ">=2.0.0 <3.0.0"
