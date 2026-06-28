@@ -1,4 +1,7 @@
-workspace: {}
+workspace:
+  extraPackages:
+    yoga-sqlite:
+      path: /Users/mark/Developer/purescript-yoga-sqlite
 
 package:
   name: yoga-sqlite-om
@@ -9,9 +12,18 @@ package:
       githubOwner: rowtype-yoga
       githubRepo: purescript-yoga-sqlite-om
   dependencies:
+    - aff: ">=7.1.0 <8.0.0"
     - console: ">=6.1.0 <7.0.0"
     - effect: ">=4.0.0 <5.0.0"
+    - maybe: ">=6.0.0 <7.0.0"
     - prelude: ">=6.0.2 <7.0.0"
-    - yoga-om: ">=1.4.0 <2.0.0"
-    - yoga-om-layer: ">=1.1.1 <2.0.0"
-    - yoga-sqlite: ">=0.1.0 <0.2.0"
+    - typelevel-prelude: ">=7.0.0 <8.0.0"
+    - yoga-json: ">=5.2.1 <6.0.0"
+    - yoga-om: ">=1.5.2 <2.0.0"
+    - yoga-om-layer: ">=1.2.2 <2.0.0"
+    - yoga-sqlite: "*"
+  test:
+    main: Test.Main
+    dependencies:
+      - spec: ">=8.0.0 <9.0.0"
+      - spec-node: ">=0.0.3 <1.0.0"

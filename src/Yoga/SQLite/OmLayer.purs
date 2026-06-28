@@ -9,26 +9,26 @@ import Prelude
 
 import Effect.Class (liftEffect)
 import Effect.Console as Console
-import Yoga.SQLite.SQLite (DBConnection, DatabasePath(..))
+import Yoga.SQLite.SQLite (Connection)
 import Yoga.SQLite.SQLite as SQLite
 import Yoga.Om as Om
 import Yoga.Om.Layer (OmLayer, makeLayer)
 
 -- | SQLite configuration
 type SQLiteConfig =
-  { path :: DatabasePath
+  { url :: String
   }
 
 -- | Row type for SQLite service
-type SQLiteL r = (sqlite :: DBConnection | r)
+type SQLiteL r = (sqlite :: Connection | r)
 
 -- | Create a SQLite layer that provides DBConnection as a service
 -- | Requires SQLiteConfig in context
-sqliteLayer :: forall r. OmLayer (sqliteConfig :: SQLiteConfig | r) () { sqlite :: DBConnection }
+sqliteLayer :: forall r. OmLayer (sqliteConfig :: SQLiteConfig | r) () { sqlite :: Connection }
 sqliteLayer = makeLayer do
   { sqliteConfig } <- Om.ask
   logInfo "Creating SQLite connection"
-  db <- liftEffect $ SQLite.open sqliteConfig.path
+  db <- liftEffect $ SQLite.sqlite sqliteConfig
   logInfo "SQLite connected"
   pure { sqlite: db }
   where
@@ -39,10 +39,10 @@ sqliteLayer = makeLayer do
 sqliteLayer' ::
   forall r.
   SQLiteConfig ->
-  OmLayer r () { sqlite :: DBConnection }
+  OmLayer r () { sqlite :: Connection }
 sqliteLayer' config = makeLayer do
   logInfo "Creating SQLite connection"
-  db <- liftEffect $ SQLite.open config.path
+  db <- liftEffect $ SQLite.sqlite config
   logInfo "SQLite connected"
   pure { sqlite: db }
   where

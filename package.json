@@ -14,5 +14,9 @@
     "om",
     "effect-system",
     "yoga"
-  ]
+  ],
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "uuid": "^13.0.0"
+  }
 }
