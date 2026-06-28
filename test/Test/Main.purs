@@ -19,6 +19,7 @@ import Yoga.SQLite.ClientOm as Client
 import Yoga.SQLite.ClientOm (AutoIncrement, PrimaryKey, Table, createTableDDL, from, insert, returning, where_)
 import Yoga.SQLite.Om as SQLiteOm
 import Yoga.SQLite.SQLite as SQLite
+import Yoga.SQLite.TypedQueryOm as TypedQuery
 
 main :: Effect Unit
 main = runSpecAndExitProcess [ consoleReporter ] spec
@@ -40,6 +41,14 @@ spec = describe "SQLite Om" do
       liftAff $ created `shouldEqual` Just { module: "Data.Foldable", ident: "elem", ps_type: "forall a. a" }
       rows <- Client.run { ident: "elem" } (from factsTable # Client.select @"module, ident, ps_type" # where_ @"ident = $ident")
       liftAff $ rows `shouldEqual` [ { module: "Data.Foldable", ident: "elem", ps_type: "forall a. a" } ]
+
+  it "runs postgres-style typed query names from Om context" do
+    withDb do
+      _ <- SQLiteOm.executeSimple (SQLite.SQL (createTableDDL @FactsTable))
+      changed <- TypedQuery.executeMutation (from factsTable # insert { module: "Data.Semigroup.Foldable", ident: "minimum", ps_type: "forall f a. f a -> a" }) {}
+      liftAff $ changed `shouldEqual` 1
+      row <- TypedQuery.executeSqlOne (from factsTable # Client.select @"module, ident, ps_type" # where_ @"ident = $ident") { ident: "minimum" }
+      liftAff $ row `shouldEqual` Just { module: "Data.Semigroup.Foldable", ident: "minimum", ps_type: "forall f a. f a -> a" }
 
 withDb :: Om.Om { sqlite :: SQLite.Connection } () Unit -> Aff Unit
 withDb om = do
