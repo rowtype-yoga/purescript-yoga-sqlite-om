@@ -20,6 +20,6 @@ spec = describe "raw SQLite batch operations" do
         , { sql: "INSERT INTO users (name) VALUES (?1)", args: SQLite.params [ "Grace" ] }
         ]
       rows <- SQLiteOm.querySimple (SQLite.SQL "SELECT name FROM users ORDER BY name")
-      liftAff $ Array.length results `shouldEqual` 3
-      liftAff $ map _.rowsAffected results `shouldEqual` [ 0, 1, 1 ]
-      liftAff $ Array.length rows.rows `shouldEqual` 2
+      Array.length results `shouldEqual` 3 # liftAff
+      map _.rowsAffected results `shouldEqual` [ 0, 1, 1 ] # liftAff
+      Array.length rows.rows `shouldEqual` 2 # liftAff

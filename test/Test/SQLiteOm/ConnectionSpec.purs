@@ -16,10 +16,10 @@ spec = describe "SQLite connection service" do
     withDb do
       { sqlite } <- Om.ask
       isOpen <- SQLite.closed sqlite # liftEffect
-      liftAff $ isOpen `shouldEqual` false
+      isOpen `shouldEqual` false # liftAff
 
   it "can ping the provided in-memory database" do
     withDb do
       { sqlite } <- Om.ask
       alive <- SQLite.ping sqlite # liftAff
-      liftAff $ alive `shouldEqual` true
+      alive `shouldEqual` true # liftAff

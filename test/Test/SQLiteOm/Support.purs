@@ -2,6 +2,7 @@ module Test.SQLiteOm.Support
   ( UsersTable
   , usersTable
   , withDb
+  , withDbParsed
   , createUsersTable
   , insertUser
   ) where
@@ -9,7 +10,9 @@ module Test.SQLiteOm.Support
 import Prelude
 
 import Effect.Aff (Aff, throwError)
+import Effect.Exception as Exception
 import Effect.Class (liftEffect)
+import Foreign (MultipleErrors)
 import Type.Function (type (#))
 import Type.Proxy (Proxy(..))
 import Yoga.Om as Om
@@ -32,6 +35,12 @@ withDb :: Om.Om { sqlite :: SQLite.Connection } () Unit -> Aff Unit
 withDb om = do
   conn <- liftEffect $ SQLite.sqlite { url: ":memory:" }
   _ <- Om.runOm { sqlite: conn } { exception: throwError } om
+  SQLite.close conn # liftEffect
+
+withDbParsed :: Om.Om { sqlite :: SQLite.Connection } (parseError :: MultipleErrors) Unit -> Aff Unit
+withDbParsed om = do
+  conn <- liftEffect $ SQLite.sqlite { url: ":memory:" }
+  _ <- Om.runOm { sqlite: conn } { exception: throwError, parseError: show >>> Exception.error >>> throwError } om
   SQLite.close conn # liftEffect
 
 createUsersTable :: forall err. Om.Om { sqlite :: SQLite.Connection } err Unit
