@@ -16,14 +16,14 @@ spec :: Spec Unit
 spec = describe "postgres-style raw SQLite query API" do
   it "executes raw SQL through the typed query module" do
     withDb do
-      _ <- SQLiteOm.executeSimple (SQLite.SQL "CREATE TABLE facts (ident TEXT NOT NULL)")
-      _ <- SQLiteOm.execute (SQLite.SQL "INSERT INTO facts (ident) VALUES (?1)") (SQLite.params [ "elem" ])
-      result <- TypedQuery.executeSqlRaw (SQLite.SQL "SELECT ident FROM facts WHERE ident = ?1") (SQLite.params [ "elem" ])
+      _ <- SQLiteOm.executeSimple (SQLite.SQL "CREATE TABLE users (email TEXT NOT NULL)")
+      _ <- SQLiteOm.execute (SQLite.SQL "INSERT INTO users (email) VALUES (?1)") (SQLite.params [ "ada@example.com" ])
+      result <- TypedQuery.executeSqlRaw (SQLite.SQL "SELECT email FROM users WHERE email = ?1") (SQLite.params [ "ada@example.com" ])
       liftAff $ Array.length result.rows `shouldEqual` 1
-      liftAff $ result.columns `shouldEqual` [ "ident" ]
+      liftAff $ result.columns `shouldEqual` [ "email" ]
 
   it "returns Nothing for a missing raw SQL row" do
     withDb do
-      _ <- SQLiteOm.executeSimple (SQLite.SQL "CREATE TABLE facts (ident TEXT NOT NULL)")
-      row <- TypedQuery.executeSqlRawOne (SQLite.SQL "SELECT ident FROM facts WHERE ident = ?1") (SQLite.params [ "missing" ])
+      _ <- SQLiteOm.executeSimple (SQLite.SQL "CREATE TABLE users (email TEXT NOT NULL)")
+      row <- TypedQuery.executeSqlRawOne (SQLite.SQL "SELECT email FROM users WHERE email = ?1") (SQLite.params [ "missing@example.com" ])
       liftAff $ isNothing row `shouldEqual` true

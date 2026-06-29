@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (liftAff)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Test.SQLiteOm.Support (createFactsTable, factsTable, insertFact, withDb)
+import Test.SQLiteOm.Support (createUsersTable, insertUser, usersTable, withDb)
 import Yoga.SQLite.ClientOm as Client
 import Yoga.SQLite.ClientOm (from, insert, where_)
 import Yoga.SQLite.TypedQueryOm as TypedQuery
@@ -15,21 +15,21 @@ spec :: Spec Unit
 spec = describe "postgres-style SQLite typed query API" do
   it "executes typed SELECT queries with typed results" do
     withDb do
-      createFactsTable
-      _ <- insertFact "Data.Semigroup.Foldable" "minimum" "forall f a. Foldable1 f => Ord a => f a -> a"
-      rows <- TypedQuery.executeSql (from factsTable # Client.select @"module, ident, ps_type" # where_ @"ident = $ident") { ident: "minimum" }
-      liftAff $ rows `shouldEqual` [ { module: "Data.Semigroup.Foldable", ident: "minimum", ps_type: "forall f a. Foldable1 f => Ord a => f a -> a" } ]
+      createUsersTable
+      _ <- insertUser "Ada" "ada@example.com" "admin"
+      rows <- TypedQuery.executeSql (from usersTable # Client.select @"name, email, role" # where_ @"email = $email") { email: "ada@example.com" }
+      liftAff $ rows `shouldEqual` [ { name: "Ada", email: "ada@example.com", role: "admin" } ]
 
   it "returns Nothing for a missing typed row" do
     withDb do
-      createFactsTable
-      row <- TypedQuery.executeSqlOne (from factsTable # Client.select @"module, ident, ps_type" # where_ @"ident = $ident") { ident: "missing" }
-      liftAff $ row `shouldEqual` (Nothing :: Maybe { module :: String, ident :: String, ps_type :: String })
+      createUsersTable
+      row <- TypedQuery.executeSqlOne (from usersTable # Client.select @"name, email, role" # where_ @"email = $email") { email: "missing@example.com" }
+      liftAff $ row `shouldEqual` (Nothing :: Maybe { name :: String, email :: String, role :: String })
 
   it "executes typed mutations and makes them visible to typed query reads" do
     withDb do
-      createFactsTable
-      changed <- TypedQuery.executeMutation (from factsTable # insert { module: "Data.Semigroup.Foldable", ident: "maximum", ps_type: "forall f a. Foldable1 f => Ord a => f a -> a" }) {}
-      row <- TypedQuery.executeSqlOne (from factsTable # Client.select @"module, ident, ps_type" # where_ @"ident = $ident") { ident: "maximum" }
+      createUsersTable
+      changed <- TypedQuery.executeMutation (from usersTable # insert { name: "Grace", email: "grace@example.com", role: "member" }) {}
+      row <- TypedQuery.executeSqlOne (from usersTable # Client.select @"name, email, role" # where_ @"email = $email") { email: "grace@example.com" }
       liftAff $ changed `shouldEqual` 1
-      liftAff $ row `shouldEqual` Just { module: "Data.Semigroup.Foldable", ident: "maximum", ps_type: "forall f a. Foldable1 f => Ord a => f a -> a" }
+      liftAff $ row `shouldEqual` Just { name: "Grace", email: "grace@example.com", role: "member" }

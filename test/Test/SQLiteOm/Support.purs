@@ -1,9 +1,9 @@
 module Test.SQLiteOm.Support
-  ( FactsTable
-  , factsTable
+  ( UsersTable
+  , usersTable
   , withDb
-  , createFactsTable
-  , insertFact
+  , createUsersTable
+  , insertUser
   ) where
 
 import Prelude
@@ -18,15 +18,15 @@ import Yoga.SQLite.ClientOm as Client
 import Yoga.SQLite.Om as SQLiteOm
 import Yoga.SQLite.SQLite as SQLite
 
-type FactsTable = Table "facts"
+type UsersTable = Table "users"
   ( id :: Int # PrimaryKey # AutoIncrement
-  , module :: String
-  , ident :: String
-  , ps_type :: String
+  , name :: String
+  , email :: String
+  , role :: String
   )
 
-factsTable :: Proxy FactsTable
-factsTable = Proxy
+usersTable :: Proxy UsersTable
+usersTable = Proxy
 
 withDb :: Om.Om { sqlite :: SQLite.Connection } () Unit -> Aff Unit
 withDb om = do
@@ -34,10 +34,10 @@ withDb om = do
   _ <- Om.runOm { sqlite: conn } { exception: throwError } om
   SQLite.close conn # liftEffect
 
-createFactsTable :: forall err. Om.Om { sqlite :: SQLite.Connection } err Unit
-createFactsTable = do
-  SQLiteOm.executeSimple (SQLite.SQL (createTableDDL @FactsTable)) # void
+createUsersTable :: forall err. Om.Om { sqlite :: SQLite.Connection } err Unit
+createUsersTable = do
+  SQLiteOm.executeSimple (SQLite.SQL (createTableDDL @UsersTable)) # void
 
-insertFact :: forall err. String -> String -> String -> Om.Om { sqlite :: SQLite.Connection } err Int
-insertFact moduleName ident psType =
-  Client.execCount {} (from factsTable # insert { module: moduleName, ident, ps_type: psType })
+insertUser :: forall err. String -> String -> String -> Om.Om { sqlite :: SQLite.Connection } err Int
+insertUser name email role =
+  Client.execCount {} (from usersTable # insert { name, email, role })
