@@ -8,6 +8,7 @@ import Test.Spec.Runner.Node (runSpecAndExitProcess)
 import Test.SQLiteOm.ClientMutationSpec as ClientMutationSpec
 import Test.SQLiteOm.ClientReadSpec as ClientReadSpec
 import Test.SQLiteOm.ConnectionSpec as ConnectionSpec
+import Test.SQLiteOm.OrmSpec as OrmSpec
 import Test.SQLiteOm.RawBatchSpec as RawBatchSpec
 import Test.SQLiteOm.RawSqlSpec as RawSqlSpec
 import Test.SQLiteOm.TypedQuerySpec as TypedQuerySpec
@@ -20,5 +21,6 @@ main = runSpecAndExitProcess [ consoleReporter ] do
   RawBatchSpec.spec
   ClientReadSpec.spec
   ClientMutationSpec.spec
+  OrmSpec.spec
   TypedQuerySpec.spec
   TypedRawSpec.spec
