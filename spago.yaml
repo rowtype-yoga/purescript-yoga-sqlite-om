@@ -2,7 +2,7 @@ workspace:
   extraPackages:
     yoga-sqlite:
       git: https://github.com/rowtype-yoga/purescript-yoga-sqlite.git
-      ref: aff8
+      ref: 83638b01baee6558d3986b16f3ec57e1c01af98e
 
 package:
   name: yoga-sqlite-om
