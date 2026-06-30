@@ -28,3 +28,12 @@ spec = describe "raw SQLite Om operations" do
       result <- SQLiteOm.querySimple (SQLite.SQL "SELECT name FROM users")
       Array.length result.rows `shouldEqual` 1 # liftAff
       result.columns `shouldEqual` [ "name" ] # liftAff
+
+  it "runs work inside a write transaction helper" do
+    withDb do
+      rowsInTransaction <- SQLiteOm.writeTransaction \tx -> do
+        _ <- SQLite.txExecute (SQLite.SQL "CREATE TABLE users (name TEXT NOT NULL)") [] tx # liftAff
+        _ <- SQLite.txExecute (SQLite.SQL "INSERT INTO users (name) VALUES (?1)") (SQLite.params [ "Ada" ]) tx # liftAff
+        rows <- SQLite.txQuery (SQLite.SQL "SELECT name FROM users") [] tx # liftAff
+        pure (Array.length rows.rows)
+      rowsInTransaction `shouldEqual` 1 # liftAff

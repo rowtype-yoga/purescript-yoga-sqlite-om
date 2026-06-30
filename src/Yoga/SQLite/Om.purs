@@ -6,10 +6,15 @@ module Yoga.SQLite.Om
   , executeSimple
   , executeMultiple
   , batch
+  , transaction
+  , readTransaction
+  , writeTransaction
+  , deferredTransaction
   ) where
 
 import Prelude
 
+import Control.Monad.Error.Class (catchError, throwError)
 import Data.Maybe (Maybe)
 import Effect.Aff.Class (liftAff)
 import Yoga.Om as Om
@@ -50,3 +55,26 @@ batch :: forall r err. TransactionMode -> Array BatchStatement -> Om.Om { sqlite
 batch mode statements = do
   { sqlite } <- Om.ask
   SQLite.batch mode statements sqlite # liftAff
+
+transaction :: forall r err a. TransactionMode -> (SQLite.Transaction -> Om.Om { sqlite :: Connection | r } err a) -> Om.Om { sqlite :: Connection | r } err a
+transaction mode run = do
+  { sqlite } <- Om.ask
+  tx <- SQLite.beginWithMode mode sqlite # liftAff
+  catchError
+    (do
+      result <- run tx
+      SQLite.commit tx # liftAff
+      pure result
+    )
+    \err -> do
+      SQLite.rollback tx # liftAff
+      throwError err
+
+readTransaction :: forall r err a. (SQLite.Transaction -> Om.Om { sqlite :: Connection | r } err a) -> Om.Om { sqlite :: Connection | r } err a
+readTransaction = transaction SQLite.Read
+
+writeTransaction :: forall r err a. (SQLite.Transaction -> Om.Om { sqlite :: Connection | r } err a) -> Om.Om { sqlite :: Connection | r } err a
+writeTransaction = transaction SQLite.Write
+
+deferredTransaction :: forall r err a. (SQLite.Transaction -> Om.Om { sqlite :: Connection | r } err a) -> Om.Om { sqlite :: Connection | r } err a
+deferredTransaction = transaction SQLite.Deferred

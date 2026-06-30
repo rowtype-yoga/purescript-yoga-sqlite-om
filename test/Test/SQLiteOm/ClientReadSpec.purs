@@ -46,7 +46,7 @@ spec = describe "typed ClientOm reads" do
       map _.name rows `shouldEqual` [ "Ada" ] # liftAff
 
   it "counts rows through ORM-style helpers" do
-    withDb do
+    withDbParsed do
       createUsersTable
       let exec = Client.execCount {}
       _ <- from usersTable # insert { name: "Ada", email: "ada@example.com", role: "admin" } # exec

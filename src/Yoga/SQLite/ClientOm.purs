@@ -45,6 +45,11 @@ module Yoga.SQLite.ClientOm
   , findWhereOrdered
   , findWhereLimited
   , findAfter
+  , findAfterWithKey
+  , create
+  , createReturningAll
+  , updateWhere
+  , deleteWhere
   , countWhere
   , countAll
   , module Schema
@@ -52,7 +57,7 @@ module Yoga.SQLite.ClientOm
 
 import Prelude
 
-import Data.Array (head, intercalate, length, take)
+import Data.Array (head, intercalate, length, mapWithIndex, take)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Symbol (class IsSymbol, reflectSymbol)
@@ -67,12 +72,11 @@ import Prim.TypeError (class Fail, Text)
 import Record as Record
 import Type.Proxy (Proxy(..))
 import Type.RowList (class ListToRow)
-import Unsafe.Coerce (unsafeCoerce)
 import Yoga.JSON (class ReadForeign)
 import Yoga.JSON as JSON
 import Yoga.Om as Om
 import Yoga.SQLite.Schema as Schema
-import Yoga.SQLite.Schema (class ExtractType, class FieldToSQLiteValue, class InsertableColumnsRL, class ParamsToArray, class StripColumnsRL, AutoIncrement, Default, ForeignKey, Nullable, PrimaryKey, References, Table, Unique, fieldToSQLiteValue)
+import Yoga.SQLite.Schema (class ExtractType, class FieldToSQLiteValue, class InsertableColumnsRL, class ParamsToArray, class RecordValuesRL, class SetClauseRL, class StripColumnsRL, AutoIncrement, Default, ForeignKey, Nullable, PrimaryKey, Table, Unique, fieldToSQLiteValue, setClauseRL)
 import Yoga.SQLite.SQLite (Connection)
 import Yoga.SQLite.SQLite as SQLite
 
@@ -470,7 +474,7 @@ findWhereLimited whereRec dir opts _ = do
     <> " ORDER BY " <> reflectSymbol (Proxy :: Proxy col) <> " " <> orderDirSQL dir
     <> " LIMIT ?" <> show limitIdx
     <> " OFFSET ?" <> show offsetIdx
-  values = whereResult.values <> [ unsafeCoerce opts.limit, unsafeCoerce opts.offset ]
+  values = whereResult.values <> [ fieldToSQLiteValue opts.limit, fieldToSQLiteValue opts.offset ]
 
 findAfter
   :: forall @col name cols colEntry rest row colType r err
@@ -487,7 +491,7 @@ findAfter
   -> Om.Om { sqlite :: Connection | r } (parseError :: MultipleErrors | err) (PageRecord row)
 findAfter cursor limit _ = do
   { sqlite } <- Om.ask
-  result <- SQLite.query (SQLite.SQL sql) [ fieldToSQLiteValue cursor, unsafeCoerce (limit + 1) ] sqlite # liftAff
+  result <- SQLite.query (SQLite.SQL sql) [ fieldToSQLiteValue cursor, fieldToSQLiteValue (limit + 1) ] sqlite # liftAff
   allRows <- traverse parseRow result.rows
   pure { items: take limit allRows, hasMore: length allRows > limit }
   where
@@ -495,6 +499,129 @@ findAfter cursor limit _ = do
     <> " WHERE " <> reflectSymbol (Proxy :: Proxy col) <> " > ?1"
     <> " ORDER BY " <> reflectSymbol (Proxy :: Proxy col) <> " ASC"
     <> " LIMIT ?2"
+
+findAfterWithKey
+  :: forall @col @key name cols colEntry keyEntry colRest keyRest row colType keyType r err
+   . IsSymbol name
+  => IsSymbol col
+  => IsSymbol key
+  => Row.Cons col colEntry colRest cols
+  => Row.Cons key keyEntry keyRest cols
+  => ExtractType colEntry colType
+  => ExtractType keyEntry keyType
+  => FieldToSQLiteValue colType
+  => FieldToSQLiteValue keyType
+  => TableRow (Table name cols) row
+  => ReadForeign { | row }
+  => { cursor :: colType, key :: keyType }
+  -> Int
+  -> Proxy (Table name cols)
+  -> Om.Om { sqlite :: Connection | r } (parseError :: MultipleErrors | err) (PageRecord row)
+findAfterWithKey cursor limit _ = do
+  { sqlite } <- Om.ask
+  result <- SQLite.query (SQLite.SQL sql) [ fieldToSQLiteValue cursor.cursor, fieldToSQLiteValue cursor.cursor, fieldToSQLiteValue cursor.key, fieldToSQLiteValue (limit + 1) ] sqlite # liftAff
+  allRows <- traverse parseRow result.rows
+  pure { items: take limit allRows, hasMore: length allRows > limit }
+  where
+  table = reflectSymbol (Proxy :: Proxy name)
+  orderColumn = reflectSymbol (Proxy :: Proxy col)
+  keyColumn = reflectSymbol (Proxy :: Proxy key)
+  sql = "SELECT * FROM " <> table
+    <> " WHERE (" <> orderColumn <> " > ?1 OR (" <> orderColumn <> " = ?2 AND " <> keyColumn <> " > ?3))"
+    <> " ORDER BY " <> orderColumn <> " ASC, " <> keyColumn <> " ASC"
+    <> " LIMIT ?4"
+
+create
+  :: forall name cols tables row rowRL r err
+   . IsSymbol name
+  => Row.Cons name cols () tables
+  => RowToList row rowRL
+  => InsertableRow (Table name cols) row
+  => RecordValuesRL rowRL row
+  => Schema.ColumnNamesRL rowRL
+  => { | row }
+  -> Proxy (Table name cols)
+  -> Om.Om { sqlite :: Connection | r } err Int
+create row _ = do
+  { sqlite } <- Om.ask
+  SQLite.execute (SQLite.SQL sql) values sqlite # liftAff
+  where
+  tableName = reflectSymbol (Proxy :: Proxy name)
+  colNames = Schema.columnNamesRL (Proxy :: Proxy rowRL)
+  placeholders = mapWithIndex (\i _ -> "?" <> show (i + 1)) colNames
+  sql =
+    if length colNames == 0 then "INSERT INTO " <> tableName <> " DEFAULT VALUES"
+    else "INSERT INTO " <> tableName <> " (" <> intercalate ", " colNames <> ") VALUES (" <> intercalate ", " placeholders <> ")"
+  values = Schema.recordValuesRL (Proxy :: Proxy rowRL) row
+
+createReturningAll
+  :: forall name cols tables row rowRL result r err
+   . IsSymbol name
+  => Row.Cons name cols () tables
+  => RowToList row rowRL
+  => InsertableRow (Table name cols) row
+  => RecordValuesRL rowRL row
+  => Schema.ColumnNamesRL rowRL
+  => TableRow (Table name cols) result
+  => ReadForeign { | result }
+  => { | row }
+  -> Proxy (Table name cols)
+  -> Om.Om { sqlite :: Connection | r } (parseError :: MultipleErrors | err) (Maybe { | result })
+createReturningAll row _ = do
+  { sqlite } <- Om.ask
+  maybeRow <- SQLite.queryOne (SQLite.SQL sql) values sqlite # liftAff
+  traverse parseRow maybeRow
+  where
+  tableName = reflectSymbol (Proxy :: Proxy name)
+  colNames = Schema.columnNamesRL (Proxy :: Proxy rowRL)
+  placeholders = mapWithIndex (\i _ -> "?" <> show (i + 1)) colNames
+  insertSql =
+    if length colNames == 0 then "INSERT INTO " <> tableName <> " DEFAULT VALUES"
+    else "INSERT INTO " <> tableName <> " (" <> intercalate ", " colNames <> ") VALUES (" <> intercalate ", " placeholders <> ")"
+  sql = insertSql <> " RETURNING *"
+  values = Schema.recordValuesRL (Proxy :: Proxy rowRL) row
+
+updateWhere
+  :: forall name cols setRow setRL whereRow whereRL r err
+   . IsSymbol name
+  => RowToList setRow setRL
+  => RowToList whereRow whereRL
+  => Schema.ValidateSetColumnsRL setRL cols
+  => SetClauseRL setRL
+  => RecordValuesRL setRL setRow
+  => ValidateWhereColumnsRL whereRL cols
+  => OmWhereClauseRL whereRL whereRow
+  => { | whereRow }
+  -> { | setRow }
+  -> Proxy (Table name cols)
+  -> Om.Om { sqlite :: Connection | r } err Int
+updateWhere whereRec setRec _ = do
+  { sqlite } <- Om.ask
+  SQLite.execute (SQLite.SQL sql) (setValues <> whereResult.values) sqlite # liftAff
+  where
+  tableName = reflectSymbol (Proxy :: Proxy name)
+  setValues = Schema.recordValuesRL (Proxy :: Proxy setRL) setRec
+  whereResult = whereClauseFragments (Proxy :: Proxy whereRL) whereRec (length setValues + 1)
+  sql = "UPDATE " <> tableName
+    <> " SET " <> intercalate ", " (setClauseRL (Proxy :: Proxy setRL) 1)
+    <> " WHERE " <> intercalate " AND " whereResult.sql
+
+deleteWhere
+  :: forall name cols whereRow whereRL r err
+   . IsSymbol name
+  => RowToList whereRow whereRL
+  => ValidateWhereColumnsRL whereRL cols
+  => OmWhereClauseRL whereRL whereRow
+  => { | whereRow }
+  -> Proxy (Table name cols)
+  -> Om.Om { sqlite :: Connection | r } err Int
+deleteWhere whereRec _ = do
+  { sqlite } <- Om.ask
+  SQLite.execute (SQLite.SQL sql) whereResult.values sqlite # liftAff
+  where
+  whereResult = whereClauseFragments (Proxy :: Proxy whereRL) whereRec 1
+  sql = "DELETE FROM " <> reflectSymbol (Proxy :: Proxy name)
+    <> " WHERE " <> intercalate " AND " whereResult.sql
 
 countWhere
   :: forall name cols whereRow whereRL r err
@@ -504,13 +631,11 @@ countWhere
   => OmWhereClauseRL whereRL whereRow
   => { | whereRow }
   -> Proxy (Table name cols)
-  -> Om.Om { sqlite :: Connection | r } err Int
+  -> Om.Om { sqlite :: Connection | r } (parseError :: MultipleErrors | err) Int
 countWhere whereRec _ = do
   { sqlite } <- Om.ask
   maybeRow <- SQLite.queryOne (SQLite.SQL sql) whereResult.values sqlite # liftAff
-  pure case maybeRow of
-    Nothing -> 0
-    Just row -> (unsafeCoerce row).result
+  countFrom maybeRow
   where
   whereResult = whereClauseFragments (Proxy :: Proxy whereRL) whereRec 1
   sql = "SELECT COUNT(*) AS result FROM " <> reflectSymbol (Proxy :: Proxy name)
@@ -520,12 +645,15 @@ countAll
   :: forall name cols r err
    . IsSymbol name
   => Proxy (Table name cols)
-  -> Om.Om { sqlite :: Connection | r } err Int
+  -> Om.Om { sqlite :: Connection | r } (parseError :: MultipleErrors | err) Int
 countAll _ = do
   { sqlite } <- Om.ask
   maybeRow <- SQLite.queryOne (SQLite.SQL sql) [] sqlite # liftAff
-  pure case maybeRow of
-    Nothing -> 0
-    Just row -> (unsafeCoerce row).result
+  countFrom maybeRow
   where
   sql = "SELECT COUNT(*) AS result FROM " <> reflectSymbol (Proxy :: Proxy name)
+
+countFrom :: forall ctx err. Maybe Foreign -> Om.Om ctx (parseError :: MultipleErrors | err) Int
+countFrom = case _ of
+  Nothing -> pure 0
+  Just row -> _.result <$> (parseRow row :: Om.Om ctx (parseError :: MultipleErrors | err) { result :: Int })

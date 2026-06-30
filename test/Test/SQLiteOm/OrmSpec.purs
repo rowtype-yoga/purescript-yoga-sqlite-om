@@ -65,6 +65,41 @@ spec = describe "ORM-style SQLite ClientOm helpers" do
       map _.name page.items `shouldEqual` [ "Grace" ] # liftAff
       page.hasMore `shouldEqual` true # liftAff
 
+  it "pages after a non-unique cursor with primary-key tie breaker" do
+    withMembers do
+      page <- Client.findAfterWithKey @"role" @"id" { cursor: "admin", key: 1 } 2 membersTable
+      map _.name page.items `shouldEqual` [ "Grace", "Linus" ] # liftAff
+      page.hasMore `shouldEqual` false # liftAff
+
+  it "creates rows through the ORM helper" do
+    withDbParsed do
+      createMembersTable
+      created <- Client.create { name: "Margaret", email: "margaret@example.com", role: "admin", age: 36, nickname: Just "hamilton" } membersTable
+      row <- Client.findOneWhere { email: Client.eq_ "margaret@example.com" } membersTable
+      created `shouldEqual` 1 # liftAff
+      map _.name row `shouldEqual` Just "Margaret" # liftAff
+
+  it "creates rows with RETURNING * through the ORM helper" do
+    withDbParsed do
+      createMembersTable
+      row <- Client.createReturningAll { name: "Barbara", email: "barbara@example.com", role: "engineer", age: 38, nickname: Nothing } membersTable
+      map _.name row `shouldEqual` Just "Barbara" # liftAff
+
+  it "updates rows through typed where helpers" do
+    withMembers do
+      changed <- Client.updateWhere { email: Client.eq_ "grace@example.com" } { role: "admin", nickname: Just "hopper" } membersTable
+      row <- Client.findOneWhere { email: Client.eq_ "grace@example.com" } membersTable
+      changed `shouldEqual` 1 # liftAff
+      map _.role row `shouldEqual` Just "admin" # liftAff
+      map _.nickname row `shouldEqual` Just (Just "hopper") # liftAff
+
+  it "deletes rows through typed where helpers" do
+    withMembers do
+      deleted <- Client.deleteWhere { role: Client.eq_ "member" } membersTable
+      rows <- Client.findAll membersTable
+      deleted `shouldEqual` 1 # liftAff
+      map _.name rows `shouldEqual` [ "Ada", "Linus" ] # liftAff
+
 withMembers :: Om.Om { sqlite :: SQLite.Connection } (parseError :: MultipleErrors) Unit -> Aff Unit
 withMembers body = withDbParsed do
   createMembersTable
