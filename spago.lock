@@ -52,7 +52,7 @@
     "extra_packages": {
       "yoga-sqlite": {
         "git": "https://github.com/rowtype-yoga/purescript-yoga-sqlite.git",
-        "ref": "83638b01baee6558d3986b16f3ec57e1c01af98e"
+        "ref": "v0.3.3"
       }
     }
   },
@@ -1330,7 +1330,7 @@
     "yoga-sqlite": {
       "type": "git",
       "url": "https://github.com/rowtype-yoga/purescript-yoga-sqlite.git",
-      "rev": "83638b01baee6558d3986b16f3ec57e1c01af98e",
+      "rev": "df52983662bb80276778aeaccdefb50b954f7b68",
       "dependencies": [
         "aff",
         "arrays",
